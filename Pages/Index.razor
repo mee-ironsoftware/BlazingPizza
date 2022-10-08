@@ -1,6 +1,5 @@
 @page "/"
 
-@using BlazingPizza.Services
 @inject HttpClient HttpClient
 @inject NavigationManager NavigationManager
 @inject OrderState OrderState
@@ -35,6 +34,22 @@
             Order >
         </a>
     </div>
+</div>
+
+<div class="top-bar">
+    <a class="logo" href="">
+        <img src="img/logo.svg" />
+    </a>
+
+    <a href="" class="nav-tab" Match="NavLinkMatch.All">
+        <img src="img/pizza-slice.svg" />
+        <div>Get Pizza</div>
+    </a>
+
+    <a href="myorders" class="nav-tab">
+        <img src="img/bike.svg" />
+        <div>My orders</div>
+    </a>
 </div>
 
 <div class="main">
