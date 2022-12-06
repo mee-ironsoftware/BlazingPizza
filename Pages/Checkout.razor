@@ -4,6 +4,8 @@
 @inject HttpClient HttpClient
 @inject NavigationManager NavigationManager
 
+@implements IDisposable
+
 <div class="top-bar">
     <a class="logo" href="">
         <img src="img/logo.svg" />
@@ -21,7 +23,7 @@
 </div>
 
 <div class="main">
-    <EditForm Model=Order.DeliveryAddress OnSubmit=CheckSubmission>
+    <EditForm EditContext=editContext OnValidSubmit=PlaceOrder>
         <div class="checkout-cols">
             <div class="checkout-order-details">
                 <h4>Review order</h4>
@@ -38,9 +40,11 @@
             </div>
         </div>
 
-        <button class="checkout-button btn btn-warning" disabled=@isSubmitting>
+        <button class="checkout-button btn btn-warning" type="Submit" disabled=@isError>
             Place order
         </button>
+
+        <DataAnnotationsValidator />
     </EditForm>
 </div>
 
@@ -48,28 +52,32 @@
 @code {
     Order Order => OrderState.Order;
 
-    bool isSubmitting;
-    bool isError = false;
+    bool isError = true;
+    private EditContext editContext;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Order.DeliveryAddress);
+        editContext.OnFieldChanged += HandleFieldChanged;
+    }
 
     async Task PlaceOrder()
     {
-        var response = await HttpClient.PostAsJsonAsync(NavigationManager.BaseUri + "orders", OrderState.Order);
+        var response = await HttpClient.PostAsJsonAsync(
+            $"{NavigationManager.BaseUri}orders", OrderState.Order);
         var newOrderId= await response.Content.ReadFromJsonAsync<int>();
         OrderState.ResetOrder();
         NavigationManager.NavigateTo($"/myorders/{newOrderId}");
     }
 
-    private async Task CheckSubmission(EditContext editContext)
+    private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
     {
-        isSubmitting = true;
-        var model = editContext.Model as Address;
-        isError = string.IsNullOrWhiteSpace(model?.Name)
-            || string.IsNullOrWhiteSpace(model?.Line1)
-            || string.IsNullOrWhiteSpace(model?.PostalCode);
-        if (!isError)
-        {
-            await PlaceOrder();
-        }
-        isSubmitting = false;
+        isError = !editContext.Validate();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= HandleFieldChanged;
     }
 }
